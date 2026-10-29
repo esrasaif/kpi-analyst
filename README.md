@@ -6,7 +6,7 @@
 | | |
 |---|---|
 | **Live demo** | <https://kpi-analyst.streamlit.app/> |
-| **Demo video (backup)** | VIDEO_URL |
+| **Demo video (backup)** | [Google Drive folder](https://drive.google.com/drive/folders/1fOgyF-W1c_xmnkDkL-RJprE9aWzhL_Gw?usp=sharing) |
 | **Repository** | <https://github.com/esrasaif/kpi-analyst> |
 | **Course** | SDAIA Academy · Agentic AI Systems Engineering · <https://github.com/SDAIAAcademy/agentic-ai> |
 | **Track** | 2 · Your harness |
