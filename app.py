@@ -17,10 +17,12 @@ import streamlit as st
 
 try:  # Streamlit secrets → environment, before agentkit reads it (locally there is no secrets file: .env is used)
     for _k in ("OPENROUTER_API_KEY", "AGENT_MODEL"):
-        if _k in st.secrets and not os.getenv(_k):
-            os.environ[_k] = str(st.secrets[_k])
+        if _k in st.secrets:  # strip stray spaces and quotes pasted around the value
+            os.environ[_k] = str(st.secrets[_k]).strip().strip("\"'").strip()
 except Exception:  # noqa: BLE001 - no secrets.toml
     pass
+if os.getenv("OPENROUTER_API_KEY"):
+    os.environ["OPENROUTER_API_KEY"] = os.environ["OPENROUTER_API_KEY"].strip().strip("\"'").strip()
 
 import agentkit as K  # noqa: E402
 import harness as H  # noqa: E402
@@ -73,9 +75,15 @@ def ask(prompt: str) -> None:
         run = K.run_agent(prompt, mcp_bridge().agent_tools() + ss.ws.tools(), system=H.CONFIGS["B"]["system"],
                           model=H.MODEL, history=H.compact(ss.history), max_steps=H.MAX_STEPS, max_cost=H.MAX_COST,
                           before_tool=gate, after_tool=H.cap_result, verbose=False)
-    except Exception as e:  # noqa: BLE001 - rate limits on free models: say so, keep the session alive
-        ss.messages.append({"role": "assistant", "content": f"⚠️ The model provider returned an error "
-                            f"(`{type(e).__name__}`). Free models get rate-limited: try again in a minute."})
+    except Exception as e:  # noqa: BLE001 - provider errors: say what happened, keep the session alive
+        kind = type(e).__name__
+        hint = {"AuthenticationError": "The OpenRouter key was rejected: the app owner should check "
+                                       "`OPENROUTER_API_KEY` in the app's Secrets.",
+                "RuntimeError": "No OpenRouter key is configured: the app owner should add `OPENROUTER_API_KEY` "
+                                "to the app's Secrets.",
+                "RateLimitError": "The free model is rate-limited right now: try again in a minute.",
+                "APIConnectionError": "The model provider could not be reached: try again in a minute."}
+        ss.messages.append({"role": "assistant", "content": f"⚠️ `{kind}`: {hint.get(kind, str(e)[:200])}"})
         return
     steps = [(e.kind, e.text) for e in run.trace if e.kind in ("call", "result", "error", "guard")]
     ss.messages.append({"role": "assistant", "content": run.final or f"(stopped: {run.stopped})", "steps": steps,
