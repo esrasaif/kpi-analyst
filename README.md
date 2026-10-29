@@ -3,11 +3,36 @@
 > A Performance & Reporting officer asks for a KPI in Arabic or English; Mu'ashir computes it from the service-request
 > database with read-only SQL, follows the official KPI definitions, and saves or emails the report after approval.
 
-**Track:** 2 · Your harness
-**Course:** SDAIA Academy · Agentic AI Systems Engineering · <https://github.com/SDAIAAcademy/agentic-ai>
-**Team:** <your name>
-**Model(s):** `google/gemma-4-31b-it:free` via OpenRouter (the course default: free, supports tool calling), with
-OpenRouter fallbacks `google/gemma-4-26b-a4b-it:free` and `nvidia/nemotron-3-super-120b-a12b:free`.
+| | |
+|---|---|
+| **Live demo** | LIVE_DEMO_URL |
+| **Demo video (backup)** | VIDEO_URL |
+| **Repository** | <https://github.com/esrasaif/kpi-analyst> |
+| **Course** | SDAIA Academy · Agentic AI Systems Engineering · <https://github.com/SDAIAAcademy/agentic-ai> |
+| **Track** | 2 · Your harness |
+| **Team** | <your name> |
+| **Model** | `nvidia/nemotron-3-ultra-550b-a55b:free` via OpenRouter (fallbacks: `nvidia/nemotron-3.5-super-vl:free`, `google/gemma-4-31b-it:free`) |
+
+**Why this model:** it's free, and its tool calls worked first time in a probe on 2026-10-29. On the same day the
+course default (`google/gemma-4-31b-it:free`) returned 429 errors from its upstream provider. Override it with
+`AGENT_MODEL` in `.env`.
+
+## Contents
+
+[Requirements checklist](#requirements-checklist) · [Problem](#problem) · [How to run](#how-to-run) ·
+[Live demo](#live-demo) · [Design across the ladder](#design-across-the-ladder) · [Tools](#tools) ·
+[Evaluation](#evaluation) · [Security note](#security-note) · [Project layout](#project-layout) ·
+[Limitations](#limitations-and-next-steps) · [Credits](#credits)
+
+## Requirements checklist
+
+| # | Capstone requirement | Where it is |
+|---|---|---|
+| 1 | Multi-step tasks, ≥ 3 tools, one over MCP | 6 tools; 4 served over MCP by [`server.py`](server.py) (stdio), 2 local write tools in [`harness.py`](harness.py) |
+| 2 | Context file, memory or retrieval, compaction or budget rule | [`AGENTS.md`](AGENTS.md) spec · `lookup_metric` retrieval over [`data/metrics.md`](data/metrics.md) · 50-row SQL cap, 3,000-char result cap, 24-message history compaction |
+| 3 | Human approval for a write, step and cost budgets | `save_report` and `send_summary` need approval · 10 steps and $0.05 per task · audit log |
+| 4 | ≥ 15 tasks, automatic graders, two configurations, error analysis | [`tasks.jsonl`](tasks.jsonl) (15) · [`evals.py`](evals.py) · [`results/`](results/) · [Error analysis](#error-analysis) |
+| 5 | Trifecta, one attack, the defence that stopped it | [Security note](#security-note) · `uv run harness.py attack` |
 
 ## Problem
 
@@ -23,8 +48,10 @@ All data is synthetic (`make_data.py`, fixed seed): 900 requests, 5 regions, Q3 
 
 ## How to run
 
+Requirements: [uv](https://docs.astral.sh/uv/) and an [OpenRouter](https://openrouter.ai/keys) key.
+
 ```bash
-git clone <this repo> && cd kpi-analyst
+git clone https://github.com/esrasaif/kpi-analyst.git && cd kpi-analyst
 cp .env.example .env            # then paste your OPENROUTER_API_KEY into .env (git-ignored)
 uv sync
 
@@ -33,11 +60,25 @@ uv run harness.py ask "Prepare a Q3 KPI summary for Dammam and save it as dammam
 uv run harness.py chat --session demo
 uv run harness.py eval tasks.jsonl --config A B      # → results/eval_A.csv, eval_B.csv, summary.md
 uv run harness.py attack                             # prompt-injection demo, guard off vs. on
+uv run streamlit run app.py                          # the web demo on http://localhost:8501
 uv run server.py --http 8765                         # the MCP server alone, for any MCP host
 ```
 
-`data/kpi.sqlite` is not committed (it is a build output): the server builds it on first run, or run `uv run make_data.py`, which also checks the data fingerprint the eval answers were computed on.
-Model responses are cached in `cache/`, so re-running an unchanged eval costs no quota.
+`data/kpi.sqlite` is not committed because it's a build output. The server builds it on first run, or you can run
+`uv run make_data.py`, which also checks the data fingerprint (`93a40ee9536dcf97`, the same on Python 3.11–3.13) that the
+eval answers were computed on. Model responses are cached in `cache/`, so re-running an unchanged eval costs no quota.
+
+## Live demo
+
+**LIVE_DEMO_URL** runs [`app.py`](app.py), a Streamlit page on the same harness as the CLI: configuration B, the
+same MCP server, budgets, egress guard and audit log. You ask in English or Arabic; the "How it worked" panel shows
+every tool call. When the agent wants to save a report or send an email, the action is **parked** and runs only when
+you click **Approve**. Try the buttons in the sidebar, including the prompt-injection example (`REQ-10005`). The demo
+runs on free models only and allows 15 questions per browser session.
+
+To deploy your own copy: on [share.streamlit.io](https://share.streamlit.io), click **Create app**, choose this repo,
+branch `main`, main file `app.py`, and Python 3.12. Under **Advanced settings → Secrets**, add
+`OPENROUTER_API_KEY = "sk-or-…"`.
 
 ## Design across the ladder
 
@@ -78,7 +119,8 @@ flowchart LR
 ## Evaluation
 
 **Suite:** 15 tasks in `tasks.jsonl`. Categories: lookup (3), KPI definitions (5, two in Arabic), aggregate (2),
-multi-step (1), actions (2), safety (1), security (1). Gold answers were computed with SQL on the committed database.
+multi-step (1), actions (2), safety (1), security (1). Gold answers were computed with SQL on the database that
+`make_data.py` builds (fingerprint `93a40ee9536dcf97`).
 **Graders** are all automatic and deterministic: `contains_any` for the numbers, `tool_called` / `tool_not_called`,
 `file_contains` (the saved report), `outbox_contains` / `not_sent_to` (what was actually emailed), and `db` (the
 data is unchanged after a delete request). There's no LLM judge, so grading costs nothing and gives the same result every run.
@@ -113,6 +155,26 @@ ERROR_ANALYSIS
   minimisation). Human oversight on every side effect. Every tool call is in the audit log (accountability). Data goes to
   OpenRouter and the model provider for inference. For real data, use an approved in-Kingdom or on-premises endpoint
   (`AGENT_PROVIDER=custom` in `agentkit.py`) and keep free-text notes out of the context, or redact them.
+
+## Project layout
+
+```
+kpi-analyst/
+├── AGENTS.md          the agent's spec (system prompt)
+├── harness.py         the agent harness: tools, permissions, guards, budgets; ask / chat / eval / attack
+├── server.py          MCP server: list_tables, describe_table, run_sql (read-only), lookup_metric
+├── app.py             the live demo (Streamlit) with Approve / Deny buttons
+├── evals.py           graders and the eval runner
+├── tasks.jsonl        the 15 eval tasks with their graders
+├── make_data.py       builds the synthetic database data/kpi.sqlite (fixed seed + fingerprint check)
+├── data/metrics.md    the KPI glossary behind lookup_metric
+├── results/           eval_A.csv, eval_B.csv (one row per task: pass, failed graders, tools, tokens, answer), summary.md
+├── agentkit.py        agent loop, OpenRouter client and MCP bridge, from the course repo
+└── pyproject.toml · uv.lock · requirements.txt (for Streamlit Cloud) · .env.example
+```
+
+At run time `artifacts/` holds the audit log (`artifacts/harness/audit.jsonl`), saved reports, the simulated outbox
+and each eval task's workspace, and `cache/` holds the cached model responses. Both are git-ignored.
 
 ## Limitations and next steps
 

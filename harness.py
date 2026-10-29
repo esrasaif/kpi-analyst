@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -31,12 +32,17 @@ ROOT = Path(__file__).resolve().parent
 OUT = K.lab_dir("harness")
 SPEC = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
+# Free on OpenRouter, reliable tool calls (on 2026-10-29 the free Gemma 4 models were rate-limited upstream).
+MODEL = os.getenv("AGENT_MODEL") or "nvidia/nemotron-3-ultra-550b-a55b:free"
+if not os.getenv("AGENT_FALLBACKS"):
+    K.FALLBACKS = ["nvidia/nemotron-3.5-super-vl:free", "google/gemma-4-31b-it:free"]
+
 # Two configurations for the eval: they differ in ONE thing, a rule that makes the agent retrieve KPI definitions.
 CONFIGS = {
-    "A": {"system": SPEC, "model": None},
+    "A": {"system": SPEC, "model": MODEL},
     "B": {"system": SPEC + "\n## KPI definitions\nBefore computing any KPI (SLA compliance, backlog, CSAT score, "
                            "resolution time, per-10k rates, …), call lookup_metric for it and follow that definition "
-                           "exactly, including which statuses count.\n", "model": None},
+                           "exactly, including which statuses count.\n", "model": MODEL},
 }
 
 MAX_STEPS, MAX_COST, MAX_RESULT_CHARS, MAX_HISTORY_MESSAGES = 10, 0.05, 3000, 24

@@ -79,12 +79,18 @@ def run_suite(agent: Callable, tasks: list[dict], name: str, workspace: Callable
     for t in tasks:
         ws, t0 = workspace(t), time.perf_counter()
         before = (K.LEDGER.calls, K.LEDGER.input_tokens, K.LEDGER.output_tokens)
-        try:
-            run = agent(t["prompt"], ws)
-            final, calls, steps = run.final or "", list(run.tool_calls), run.steps
-            err = "" if run.stopped == "done" else f"stopped: {run.stopped}"
-        except Exception as e:  # noqa: BLE001 - a crash is a failed task, not a failed suite
-            final, calls, steps, err = "", [], 0, f"{type(e).__name__}: {str(e)[:200]}"
+        for attempt in range(3):  # network errors and rate limits are retried: they say nothing about the agent
+            try:
+                run = agent(t["prompt"], ws)
+                final, calls, steps = run.final or "", list(run.tool_calls), run.steps
+                err = "" if run.stopped == "done" else f"stopped: {run.stopped}"
+                break
+            except Exception as e:  # noqa: BLE001 - a crash is a failed task, not a failed suite
+                final, calls, steps, err = "", [], 0, f"{type(e).__name__}: {str(e)[:200]}"
+                if not err.startswith(("RateLimit", "APIConnection", "APITimeout", "InternalServer")):
+                    break
+                print(f"   … {err[:60]}; retrying in {20 * (attempt + 1)} s")
+                time.sleep(20 * (attempt + 1))
         grades = grade(t, final, calls, ws) if not err.startswith(("RateLimit", "APIConnection")) else []
         passed = bool(grades) and all(g["pass"] for g in grades) and not err.startswith("stopped")
         rows.append({"config": name, "id": t["id"], "category": t["category"], "lang": t["lang"], "passed": passed,

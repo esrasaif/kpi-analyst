@@ -4,7 +4,7 @@
 {"id": "backlog-jeddah", "category": "kpi", "lang": "en", "prompt": "What is the current backlog in Jeddah?", "graders": [{"type": "contains_any", "values": ["37"]}]}
 {"id": "sla-riyadh-aug", "category": "kpi", "lang": "en", "prompt": "What was the SLA compliance rate in Riyadh for requests opened in August 2026?", "graders": [{"type": "contains_any", "values": ["61.9"]}]}
 {"id": "csat-app", "category": "kpi", "lang": "en", "prompt": "What is the CSAT score for requests submitted through the app channel?", "graders": [{"type": "contains_any", "values": ["49.8"]}]}
-{"id": "ar-sla-overall", "category": "kpi", "lang": "ar", "prompt": "ما هي نسبة الالتزام باتفاقية مستوى الخدمة (SLA) لجميع المناطق في الربع الثالث 2026؟", "graders": [{"type": "contains_any", "values": ["61.6"]}]}
+{"id": "ar-sla-overall", "category": "kpi", "lang": "ar", "prompt": "ما هي نسبة الالتزام الإجمالية باتفاقية مستوى الخدمة (SLA) في الربع الثالث 2026، لكل المناطق مجتمعة (رقم واحد)؟", "graders": [{"type": "contains_any", "values": ["61.6"]}]}
 {"id": "per10k-abha", "category": "kpi", "lang": "en", "prompt": "How many requests per 10k residents did Abha have in Q3 2026?", "graders": [{"type": "contains_any", "values": ["2.0", "2.02"]}]}
 {"id": "avg-rating-roads", "category": "aggregate", "lang": "en", "prompt": "What is the average satisfaction rating (1 to 5) for roads requests? Give two decimals.", "graders": [{"type": "contains_any", "values": ["2.51"]}]}
 {"id": "worst-category-sla", "category": "aggregate", "lang": "en", "prompt": "Which request category has the lowest SLA compliance rate in Q3 2026, and what is the rate?", "graders": [{"type": "contains_any", "values": ["waste"]}, {"type": "contains_any", "values": ["56.4"]}]}

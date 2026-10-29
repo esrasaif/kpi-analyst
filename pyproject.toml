@@ -10,6 +10,7 @@ dependencies = [
     "pandas>=2.2",
     "mcp>=2.3",
     "tabulate>=0.9",
+    "streamlit>=1.40",
 ]
 
 [tool.uv]
