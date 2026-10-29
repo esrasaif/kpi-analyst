@@ -1,0 +1,34 @@
+$ uv run harness.py ask "Prepare a short Q3 2026 KPI summary for Dammam with its backlog, SLA compliance rate and CSAT score, and save it as dammam_q3.md"
+(the approval prompt below was answered "y")
+🧑 user   Prepare a short Q3 2026 KPI summary for Dammam with its backlog, SLA compliance rate and CSAT score, and save it as dammam_q3.md
+🔧 call   list_tables({})
+📦 result {"regions": 5, "requests": 900}
+🔧 call   describe_table({"table": "requests"})
+📦 result {"schema": "CREATE TABLE requests (\n id TEXT PRIMARY KEY, -- REQ-10001 …\n opened_on TEXT, -- ISO date, 2026-07-01 … 2026-09-30\n region TEXT REFERENCES region…
+🔧 call   lookup_metric({"term": "backlog"})
+📦 result ## Backlog Aliases: open requests, pending requests, outstanding requests, work in progress Number of requests with status `open` or `in_progress`. Cancelled re…
+🔧 call   lookup_metric({"term": "SLA compliance"})
+📦 result ## SLA compliance rate Aliases: SLA, on-time rate, within SLA, SLA performance Share of finished requests (status `resolved` or `closed`) whose `resolved_hours …
+🔧 call   lookup_metric({"term": "CSAT"})
+📦 result ## CSAT score Aliases: customer satisfaction, satisfaction score, CSAT Percentage of **rated** requests (`csat IS NOT NULL`) with `csat >= 4`. One decimal. This…
+🔧 call   run_sql({"sql": "SELECT COUNT(*) as backlog\nFROM requests\nWHERE region = 'DMM'\n AND status IN ('open', 'in_progress')\n AND opened_on >= '2026-07-01'\n AND o…
+📦 result {"columns": ["backlog"], "rows": [[8]]}
+🔧 call   run_sql({"sql": "SELECT ROUND(100.0 * SUM(resolved_hours <= sla_hours) / COUNT(*), 1) as sla_compliance_rate\nFROM requests\nWHERE region = 'DMM'\n AND status I…
+📦 result {"columns": ["sla_compliance_rate"], "rows": [[72.5]]}
+🔧 call   run_sql({"sql": "SELECT ROUND(100.0 * SUM(csat >= 4) / COUNT(*), 1) as csat_score\nFROM requests\nWHERE region = 'DMM'\n AND status IN ('resolved', 'closed')\n …
+📦 result {"columns": ["csat_score"], "rows": [[60.2]]}
+🔧 call   save_report({"markdown": "# Dammam Q3 2026 KPI Summary\n\n**Region:** Dammam (DMM) \n**Period:** Q3 2026 (2026-07-01 to 2026-09-30)\n\n## Key Metrics\n\n| KPI |…
+
+🛡️  Allow save_report({"markdown": "# Dammam Q3 2026 KPI Summary\n\n**Region:** Dammam (DMM)  \n**Period:** Q3 2026 (2026-07-01 to 2026-09-30)\n\n## Key Metrics\n\n| KPI | Value | Definition |\n|-----|-------|------------|\n| **Backlog** | 8 | Requests with status `open` or `in_progress` (snapshot 2026-09-30) |\n| **SLA Compliance Rate** | 72.5…", "filename": "dammam_q3.md"})? [y/N] 📦 result {"saved": "reports/dammam_q3.md", "chars": 1131}
+✅ final  The Q3 2026 KPI summary for Dammam has been saved as **dammam_q3.md**. **Summary of the numbers:** - **Backlog:** 8 requests (open or in_progress as of 2026-09-…
+
+The Q3 2026 KPI summary for Dammam has been saved as **dammam_q3.md**.
+
+**Summary of the numbers:**
+- **Backlog:** 8 requests (open or in_progress as of 2026-09-30)
+- **SLA Compliance Rate:** 72.5% (finished requests resolved within SLA)
+- **CSAT Score:** 60.2% (rated requests scoring 4 or 5)
+
+All three metrics are computed from the `requests` table, filtered to Dammam (region code `DMM`) and the Q3 2026 window (2026-07-01 to 2026-09-30).
+
+[10 steps · 10 calls (0 from cache) · 25,416 in / 1,493 out tokens · 0 cached · $0.0000]

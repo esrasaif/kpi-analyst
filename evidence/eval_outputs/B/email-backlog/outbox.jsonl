@@ -1,0 +1,1 @@
+{"to": "kpi-team@kpi.example.sa", "subject": "Backlog update", "body": "Total backlog across all regions (Riyadh, Jeddah, Dammam, Madinah, Abha) as of 2026-09-30 snapshot: 101 requests.\n\nComputed as COUNT of requests with status 'open' or 'in_progress' (cancelled excluded), per the official backlog definition."}
