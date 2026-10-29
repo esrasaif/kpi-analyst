@@ -10,7 +10,7 @@
 | **Repository** | <https://github.com/esrasaif/kpi-analyst> |
 | **Course** | SDAIA Academy · Agentic AI Systems Engineering · <https://github.com/SDAIAAcademy/agentic-ai> |
 | **Track** | 2 · Your harness |
-| **Team** | <your name> |
+| **Team** | Esra Saif |
 | **Model** | `nvidia/nemotron-3-ultra-550b-a55b:free` via OpenRouter (fallbacks: `nvidia/nemotron-3.5-super-vl:free`, `google/gemma-4-31b-it:free`) |
 
 **Why this model:** it's free, and its tool calls worked first time in a probe on 2026-10-29. On the same day the
